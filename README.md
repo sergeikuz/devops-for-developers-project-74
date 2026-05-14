@@ -1,6 +1,9 @@
 ### Hexlet tests and linter status:
 [![Actions Status](https://github.com/sergeikuz/devops-for-developers-project-74/actions/workflows/hexlet-check.yml/badge.svg)](https://github.com/sergeikuz/devops-for-developers-project-74/actions)
 
+### CI Status:
+[![CI](https://github.com/sergeikuz/devops-for-developers-project-74/actions/workflows/push.yml/badge.svg)](https://github.com/sergeikuz/devops-for-developers-project-74/actions/workflows/push.yml)
+
 # DevOps for Developers
 
 Проект для изучения Docker и Docker Compose на примере приложения [JS Fastify Blog](https://github.com/hexlet-components/js-fastify-blog) — блога на Node.js + Fastify.

@@ -6,6 +6,10 @@ install-dependensies:
 start-project:
 	docker run -it -w /root -v `pwd`/app:/root -p 8080:8080 node:20.12.2 make dev
 
+# CI: запуск тестов через Docker Compose
+ci:
+	docker-compose -f docker-compose.yml up --abort-on-container-exit --exit-code-from app
+
 # Запуск тестов через Docker Compose (production образ)
 test:
 	docker-compose -f docker-compose.yml up --abort-on-container-exit --exit-code-from app
