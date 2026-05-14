@@ -46,6 +46,7 @@ make test
 | `make setup` | Установка зависимостей (`npm install` + миграции БД) |
 | `make dev` | Запуск dev-сервера с hot-reload на `http://127.0.0.1:8080` |
 | `make test` | Запуск тестов через Docker Compose (production образ) |
+| `make ci` | CI-режим: запуск тестов через Docker Compose (для GitHub Actions) |
 | `make build` | Сборка production образа из `Dockerfile.production` |
 | `make push` | Push production образа на Docker Hub |
 | `make login` | Авторизация в Docker Hub |
@@ -108,31 +109,70 @@ docker run -p 8080:8080 -e NODE_ENV=development sergei3333/devops-for-developers
 ### Схема работы
 
 ```
-                  ┌─────────────────────────────────┐
-                  │        Хост-машина              │
-                  │                                 │
-  app/  ← ваш код (редактируете в IDE)              │
-       ↑                                             │
-       │ volume (ТОЛЬКО в dev-режиме)               │
-       ↓                                             │
-  ┌────────────────────────────────────────┐        │
-  │          Docker контейнер               │        │
-  │                                         │        │
-  │  /app  ← код (из volume или из образа)  │        │
-  │  node:20.12.2 ← Node.js внутри          │        │
-  │  make test  или  make dev               │        │
-  └────────────────────────────────────────┘        │
-                    ↑                               │
-                    │ port 8080:8080 (только в dev) │
-                    ↓                               │
-           http://127.0.0.1:8080 ← браузер          │
-                  └─────────────────────────────────┘
+                   ┌─────────────────────────────────┐
+                   │        Хост-машина              │
+                   │                                 │
+   app/  ← ваш код (редактируете в IDE)              │
+        ↑                                             │
+        │ volume (ТОЛЬКО в dev-режиме)               │
+        ↓                                             │
+   ┌────────────────────────────────────────┐        │
+   │          Docker контейнер               │        │
+   │                                         │        │
+   │  /app  ← код (из volume или из образа)  │        │
+   │  node:20.12.2 ← Node.js внутри          │        │
+   │  make test  или  make dev               │        │
+   └────────────────────────────────────────┘        │
+                     ↑                               │
+                     │ port 8080:8080 (только в dev) │
+                     ↓                               │
+            http://127.0.0.1:8080 ← браузер          │
+                   └─────────────────────────────────┘
 
-  Режимы:
-  ┌──────────┬──────────────────────┬───────────────┐
-  │ Режим    │ Dockerfile           │ Volumes       │
-  ├──────────┼──────────────────────┼───────────────┤
-  │ Тесты    │ Dockerfile.production│ нет           │
-  │ Dev      │ Dockerfile           │ ./app:/app    │
-  └──────────┴──────────────────────┴───────────────┘
+   Режимы:
+   ┌──────────┬──────────────────────┬───────────────┐
+   │ Режим    │ Dockerfile           │ Volumes       │
+   ├──────────┼──────────────────────┼───────────────┤
+   │ Тесты    │ Dockerfile.production│ нет           │
+   │ Dev      │ Dockerfile           │ ./app:/app    │
+   └──────────┴──────────────────────┴───────────────┘
 ```
+
+## GitHub Actions CI
+
+При каждом push в ветку `main` запускается workflow `.github/workflows/push.yml`:
+
+```
+push в main
+    │
+    ├─── Job 1: test
+    │     ├── checkout
+    │     └── make ci (тесты через Docker Compose)
+    │              │
+    │              ├── success → Job 2 запускается
+    │              └── fail    → workflow останавливается, образ НЕ пушится
+    │
+    └─── Job 2: build-and-push (только если test = success)
+          ├── checkout
+          ├── login to Docker Hub
+          ├── setup Buildx
+          └── build + push (Dockerfile.production → latest)
+```
+
+### Настройка секретов
+
+Для работы workflow необходимо настроить в **GitHub → Settings → Secrets and variables → Actions**:
+
+| Тип | Имя | Значение |
+|---|---|---|
+| Variable | `DOCKERHUB_USERNAME` | Ваш логин Docker Hub (например, `sergei3333`) |
+| Secret | `DOCKERHUB_TOKEN` | Access Token Docker Hub с правами Read & Write |
+
+**Как создать токен Docker Hub:**
+
+1. Зайдите на [hub.docker.com](https://hub.docker.com) → **Account Settings** → **Security**
+2. Нажмите **New Access Token**
+3. Дайте название (например, `github-actions`)
+4. Выберите права: **Read & Write**
+5. Скопируйте токен — он показывается один раз
+6. Вставьте его в GitHub Secret `DOCKERHUB_TOKEN`

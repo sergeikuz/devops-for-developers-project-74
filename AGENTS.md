@@ -10,6 +10,9 @@ This is a Hexlet DevOps learning project. The actual app (JS Fastify Blog) lives
 make setup   # Install deps + run DB migrations (one-time)
 make dev     # Start dev server at http://127.0.0.1:8080
 make test    # Run tests via Docker Compose (CI mode)
+make ci      # CI mode: same as test, used by GitHub Actions
+make build   # Build production image from Dockerfile.production
+make push    # Push production image to Docker Hub
 ```
 
 ## Docker Compose Two-File Pattern
